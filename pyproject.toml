@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tree-sitter-cuda37"
+description = "CUDA grammar for tree-sitter (Python 3.7 compatible build)"
+version = "0.21.2"
+keywords = ["incremental", "parsing", "tree-sitter", "cuda"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Compilers",
+  "Topic :: Text Processing :: Linguistic",
+  "Typing :: Typed",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+]
+authors = [{ name = "Stephan Seitz" }]
+requires-python = ">=3.7"
+license.text = "MIT"
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/tree-sitter-grammars/tree-sitter-cuda"
+
+[project.optional-dependencies]
+core = ["tree-sitter>=0.20"]
+
+# cp37 is the target of this distribution; older cibuildwheel config that only
+# built cp310 wheels is intentionally removed.
+[tool.cibuildwheel]
+build = "cp37-*"
+build-frontend = "build"
+test-requires = ["tree-sitter>=0.20"]
