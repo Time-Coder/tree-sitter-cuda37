@@ -16,13 +16,17 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.7",
 ]
-authors = [{ name = "Stephan Seitz" }]
+authors = [
+  { name = "Stephan Seitz" },
+  { name = "Time-Coder" },
+]
 requires-python = ">=3.7"
 license.text = "MIT"
 readme = "README.md"
 
 [project.urls]
-Homepage = "https://github.com/tree-sitter-grammars/tree-sitter-cuda"
+Homepage = "https://github.com/Time-Coder/tree-sitter-cuda37"
+Upstream = "https://github.com/tree-sitter-grammars/tree-sitter-cuda"
 
 [project.optional-dependencies]
 core = ["tree-sitter>=0.20"]
