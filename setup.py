@@ -6,7 +6,14 @@ from sysconfig import get_config_var
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build import build
 from setuptools.command.egg_info import egg_info
-from wheel.bdist_wheel import bdist_wheel
+# `wheel` backs only the bdist_wheel command. This module is also imported for
+# sdist, egg_info and a plain `pip install` from a source tree, and a bare
+# CPython 3.7 venv has no wheel -- importing it at module scope made every one
+# of those fail with "No module named 'wheel'".
+try:
+    from wheel.bdist_wheel import bdist_wheel  # noqa: F401  (registers the command)
+except ImportError:  # pragma: no cover - a build without wheel cannot bdist_wheel
+    bdist_wheel = None
 
 sources = [
     "bindings/python/tree_sitter_cuda37/binding.c",
