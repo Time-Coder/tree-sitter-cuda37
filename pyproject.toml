@@ -4,45 +4,89 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tree-sitter-cuda37"
+# The version lives in tree_sitter_cuda37/__init__.py as a literal, so a caller,
+# a checkout that is not installed, and the built metadata all read one value.
+# `attr` is parsed out of the source by setuptools' AST reader, never imported --
+# which matters here because importing the package needs `_binding`, and that
+# extension does not exist until after the build.
+dynamic = ["version"]
 description = "CUDA grammar for tree-sitter (Python 3.7 compatible build)"
-version = "0.21.4"
+readme = "README.md"
+requires-python = ">=3.7"
+# The `{ text = ... }` table rather than the PEP 639 `license = "MIT"` string:
+# setuptools 68 is the last release that installs on Python 3.7, and it rejects
+# the bare string as an invalid definition.
+license = { text = "MIT" }
+authors = [
+    { name = "Stephan Seitz" },
+    { name = "Bing-Hui WANG", email = "binghui.wang@foxmail.com" },
+]
 keywords = ["incremental", "parsing", "tree-sitter", "cuda"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "Topic :: Software Development :: Compilers",
-  "Topic :: Text Processing :: Linguistic",
-  "Typing :: Typed",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.7",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Text Processing :: Linguistic",
+    "Typing :: Typed",
 ]
-authors = [
-  { name = "Stephan Seitz" },
-  { name = "Time-Coder" },
-]
-requires-python = ">=3.7"
-license.text = "MIT"
-readme = "README.md"
-
 # A runtime dependency, not an extra: `tree_sitter_cuda37/__init__.py` imports
 # tree_sitter at module scope, so plain `pip install tree-sitter-cuda37` has to
 # pull it. Shipping it only as the `core` extra made the install succeed and the
-# import fail with ModuleNotFoundError -- the same defect tree-sitter-metal 0.1.0
-# had.
+# import fail with ModuleNotFoundError -- the same defect tree-sitter-metal
+# 0.1.0 had.
 dependencies = ["tree-sitter>=0.20"]
+
+[project.optional-dependencies]
+# Kept as a no-op alias so `pip install tree-sitter-cuda37[core]` keeps
+# resolving for anyone who spelled the extra when it was the only way.
+core = ["tree-sitter>=0.20"]
+# `importlib.metadata` arrived in 3.8; on 3.7 the `__version__` lookup falls back
+# to this backport. Conditional rather than unconditional so 3.8+ installs nothing.
+dev = ["pytest>=8", "ruff>=0.9"]
 
 [project.urls]
 Homepage = "https://github.com/Time-Coder/tree-sitter-cuda37"
+Source = "https://github.com/Time-Coder/tree-sitter-cuda37"
 Upstream = "https://github.com/tree-sitter-grammars/tree-sitter-cuda"
 
-# `core` stays as a no-op alias so `pip install tree-sitter-cuda37[core]`
-# keeps resolving for anyone who spelled the extra.
-[project.optional-dependencies]
-core = ["tree-sitter>=0.20"]
+[tool.setuptools]
+package-dir = { "" = "bindings/python" }
+zip-safe = false
 
-# cp37 is the target of this distribution; older cibuildwheel config that only
-# built cp310 wheels is intentionally removed.
+[tool.setuptools.packages.find]
+where = ["bindings/python"]
+
+[tool.setuptools.package-data]
+tree_sitter_cuda37 = ["*.pyi", "py.typed"]
+"tree_sitter_cuda37.queries" = ["*.scm"]
+
+[tool.setuptools.dynamic]
+version = { attr = "tree_sitter_cuda37.__version__" }
+
+# One wheel per *platform*, not per interpreter. The extension is compiled
+# against the limited API (`Py_LIMITED_API = 0x03070000`) and tagged abi3, so a
+# single cp37-abi3 wheel installs on CPython 3.7 through 3.15 on that platform.
+# The previous `build = "cp37-*"` produced one wheel per CPython version, which
+# the `dist/` tree still shows as the cp37..cp315 matrix this replaces.
 [tool.cibuildwheel]
-build = "cp37-*"
+build = "cp37-abi3-*"
 build-frontend = "build"
 test-requires = ["tree-sitter>=0.20"]
+test-command = "python -c \"import tree_sitter_cuda37; tree_sitter_cuda37.language()\""
+
+[tool.pytest.ini_options]
+testpaths = ["bindings/python/tree_sitter_cuda37/tests"]

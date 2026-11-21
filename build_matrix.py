@@ -1,8 +1,17 @@
-"""Build tree-sitter-cuda37 wheels for CPython 3.7-3.15, 64- and 32-bit.
+"""Build one abi3 wheel per architecture, plus the sdist.
 
-Runs `setup.py bdist_wheel` once per interpreter and produces one sdist with the
-first one. The grammar is compiled from the ABI-13 src/parser.c plus the
-external scanner, so every wheel carries a per-interpreter _binding.pyd.
+The grammar is compiled from the ABI-13 `src/parser.c` plus the external
+scanner, and the extension targets the **limited API**
+(`Py_LIMITED_API=0x03070000`), so one wheel per architecture serves every
+CPython from 3.7 up -- `cp37-abi3-win_amd64`, not one wheel per interpreter.
+
+This script used to run `bdist_wheel` on all eighteen interpreters and produced
+eighteen per-version wheels. The tag now comes from
+`options={"bdist_wheel": {"py_limited_api": "cp37"}}` in `setup.py`, so the
+matrix is two builds and the artefact count is two wheels, not eighteen.
+
+Building with the 3.7 interpreter is deliberate: it proves the limited-API floor
+rather than assuming it.
 """
 
 import os
@@ -12,25 +21,10 @@ import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
+# (interpreter, builds the sdist too). One entry per architecture.
 INTERPRETERS = [
-    r"D:\Python\37\python.exe",
-    r"D:\Python\38\python.exe",
-    r"D:\Python\39\python.exe",
-    r"D:\Python\310\python.exe",
-    r"D:\Python\311\python.exe",
-    r"D:\Python\312\python.exe",
-    r"D:\Python\313\python.exe",
-    r"D:\Python\314\python.exe",
-    r"D:\Python\315\python.exe",
-    r"D:\Python\37-32\python.exe",
-    r"D:\Python\38-32\python.exe",
-    r"D:\Python\39-32\python.exe",
-    r"D:\Python\310-32\python.exe",
-    r"D:\Python\311-32\python.exe",
-    r"D:\Python\312-32\python.exe",
-    r"D:\Python\313-32\python.exe",
-    r"D:\Python\314-32\python.exe",
-    r"D:\Python\315-32\python.exe",
+    (r"D:\Python\37\python.exe", True),
+    (r"D:\Python\37-32\python.exe", False),
 ]
 
 
@@ -41,11 +35,15 @@ def main() -> int:
     os.makedirs(dist, exist_ok=True)
 
     failures = []
-    for index, python in enumerate(INTERPRETERS):
+    for python, with_sdist in INTERPRETERS:
         if not os.path.exists(python):
             failures.append((python, "missing interpreter"))
             continue
-        commands = ["sdist", "bdist_wheel"] if index == 0 else ["bdist_wheel"]
+        commands = ["bdist_wheel", "--dist-dir", dist]
+        if with_sdist:
+            commands = ["sdist", "--dist-dir", dist] + commands
+        # A stale build/ directory would leak objects compiled for the previous
+        # architecture into this wheel, so it is removed before every build.
         shutil.rmtree(os.path.join(ROOT, "build"), ignore_errors=True)
         result = subprocess.run(
             [python, "setup.py"] + commands,
@@ -64,6 +62,16 @@ def main() -> int:
     print("\n=== %d artifacts ===" % len(artifacts))
     for name in artifacts:
         print(name)
+
+    # Each architecture must have produced exactly one abi3 wheel. A wheel named
+    # cpXXX-cpXXX means the limited-API option stopped taking effect, which would
+    # quietly rebuild the eighteen-wheel matrix this replaced.
+    wheels = [f for f in artifacts if f.endswith(".whl")]
+    bad = [f for f in wheels if "-abi3-" not in f]
+    if bad:
+        failures.append(("dist/", "not abi3: %s" % ", ".join(bad)))
+    if len(wheels) != len(INTERPRETERS):
+        failures.append(("dist/", "%d wheels for %d architectures" % (len(wheels), len(INTERPRETERS))))
 
     if failures:
         print("\n=== failures ===")
