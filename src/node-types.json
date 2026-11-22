@@ -5033,19 +5033,11 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "optional_parameter_declaration",
           "named": true
         },
         {
           "type": "parameter_declaration",
-          "named": true
-        },
-        {
-          "type": "variadic_parameter",
           "named": true
         },
         {
@@ -7337,6 +7329,7 @@
   {
     "type": "translation_unit",
     "named": true,
+    "root": true,
     "fields": {},
     "children": {
       "multiple": true,
@@ -7912,11 +7905,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "variadic_parameter",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "variadic_parameter_declaration",
@@ -8578,7 +8566,8 @@
   },
   {
     "type": "comment",
-    "named": true
+    "named": true,
+    "extra": true
   },
   {
     "type": "compl",
